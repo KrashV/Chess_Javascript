@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chess AI OP</title>
+        <meta charset='utf-8'> 
+        <link rel="stylesheet" href="css/chessboard-0.3.0.min.css">
+        <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+        <script src="lib/chessboard-0.3.0.min.js"></script>
+        <script src="https://cdn.rawgit.com/lhartikk/simple-chess-ai/master/lib/js/chess.js"></script>
+        <script data-main="app" src="lib/require.js"></script>
+        <script src="../node_modules/pgnToJSON/pgnParser.js"></script>
+        
+            
+    </head>
+    <style>
+            .thumb {
+              height: 75px;
+              border: 1px solid #000;
+              margin: 10px 5px 0 0;
+            }
+    </style>
+    <body>
+        <h1>Chess AI</h1>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <label class="upload">
+        <input type="file" id="files" name="files[]" multiple />
+        <output id="list"></output>
+        <p class="filename"></p>
+        </label>
+        
+        <div id="board1" style="width: 600px"></div>
+        <input type="button" id="moveButton" value="Move" />
+        <input type="button" id="undoButton" value="Undo" />
+        <input type="button" id="checkButton" value="Check" />
+        <div class="info">
+            Search depth:
+            <select id="search-depth">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        
+
+        <script>
+            var filepgn = '';
+            var chess = new Chess();
+            var config = {
+                draggable: true,
+                position: 'start',
+                onDragStart: onDragStart,
+                onDrop: onDrop,
+                onSnapEnd: onSnapEnd
+            }
+            var board1 = ChessBoard('board1', config);
+            var globDepth = 3;
+            var historyDM = 0;
+            var positionCount;
+            var weight = {
+                whitePawn: 10,
+                blackPawn: -10,
+                whiteKnight: 30,
+                blackKnight: -30,
+                whiteBishop: 30,
+                blackBishop: -30,
+                whiteRook: 50,
+                blackRook: -50,
+                whiteQueen: 90,
+                blackQueen: -90,
+                whiteKing: 999,
+                blackKing: -999,
+                current: 0
+            };
+
+            var positionKing = 
+                               [[2.0, 2.0, -1.0, -2.0, -3.0, -3.0, -3.0, -3.0],
+                                [3.0, 2.0, -2.0, -3.0, -4.0, -4.0, -4.0, -4.0],
+                                [1.0, 0.0, -2.0, -3.0, -4.0, -4.0, -4.0, -4.0],
+                                [0.0, 0.0, -2.0, -4.0, -5.0, -5.0, -5.0, -5.0],
+                                [0.0, 0.0, -2.0, -4.0, -5.0, -5.0, -5.0, -5.0],
+                                [1.0, 0.0, -2.0, -3.0, -4.0, -4.0, -4.0, -4.0],
+                                [3.0, 2.0, -2.0, -3.0, -4.0, -4.0, -4.0, -4.0],
+                                [2.0, 2.0, -1.0, -2.0, -3.0, -3.0, -3.0, -3.0]];
+
+            var positionQueen = 
+                               [[-2.0, -1.0, -1.0,  0.0, -0.5, -1.0, -1.0, -2.0],
+                                [-1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
+                                [-1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+                                [-0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+                                [-0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+                                [-1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+                                [-1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
+                                [-2.0, -1.0, -1.0,  0.0, -0.5, -1.0, -1.0, -2.0]];
+
+            var positionRook = 
+                               [[ 0.0, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5,  0.0],
+                                [ 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1.0,  0.0],
+                                [ 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1.0,  0.0],
+                                [ 0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  1.0,  0.0],
+                                [ 0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  1.0,  0.0],
+                                [ 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1.0,  0.0],
+                                [ 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1.0,  0.0],
+                                [ 0.0, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5,  0.0]]; 
+                                
+            var positionBishop = 
+                               [[-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
+                                [-1.0,  0.5,  1.0,  0.0,  0.5,  0.0,  0.0, -1.0],
+                                [-1.0,  0.0,  1.0,  1.0,  0.5,  0.5,  0.0, -1.0],
+                                [-1.0,  0.0,  1.0,  1.0,  0.5,  0.5,  0.0, -1.0],
+                                [-1.0,  0.0,  1.0,  1.0,  0.5,  0.5,  0.0, -1.0],
+                                [-1.0,  0.0,  1.0,  1.0,  0.5,  0.5,  0.0, -1.0],
+                                [-1.0,  0.5,  1.0,  0.0,  0.5,  0.0,  0.0, -1.0],
+                                [-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]];
+
+            var positionKnight = 
+                               [[-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
+                                [-4.0, -2.0,  0.5,  0.0,  0.5,  0.0, -2.0, -4.0],
+                                [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
+                                [-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
+                                [-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
+                                [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
+                                [-4.0, -2.0,  0.5,  0.0,  0.5,  0.0, -2.0, -4.0],
+                                [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]];
+                                
+            var positionPawn = 
+                               [[ 0.0,  0.5,  0.5,  0.0,  0.5,  1.0,  5.0,  0.0],
+                                [ 0.0,  1.0, -0.5,  0.0,  0.5,  1.0,  5.0,  0.0],
+                                [ 0.0,  1.0, -1.0,  0.0,  1.0,  2.0,  5.0,  0.0],
+                                [ 0.0, -2.0,  0.0,  2.0,  2.5,  3.0,  5.0,  0.0],
+                                [ 0.0, -2.0,  0.0,  2.0,  2.5,  3.0,  5.0,  0.0],
+                                [ 0.0,  1.0, -1.0,  0.0,  1.0,  2.0,  5.0,  0.0],
+                                [ 0.0,  1.0, -0.5,  0.0,  0.5,  1.0,  5.0,  0.0],
+                                [ 0.0,  0.5,  0.5,  0.0,  0.5,  1.0,  5.0,  0.0]];
+
+
+            function onDragStart (source, piece, position, orientation) {
+                if (chess.game_over()) return false
+                if (piece.search(/^b/) !== -1) return false
+            }
+
+            function makeRandomMove () {
+                var possibleMoves = chess.moves()
+                if (possibleMoves.length === 0) return
+
+                var startSec = Date.now();
+                calculate(pl);
+                var endSec = Date.now();
+                var resSec = endSec - startSec;
+                console.log("Timer: " + resSec / 1000 + " sec.");
+                console.log("Position evaluated:" + positionCount);
+                board1.position(chess.fen());
+                pl = !pl;
+            }
+
+            function onDrop (source, target) {
+                var move = chess.move({
+                    from: source,
+                    to: target,
+                    promotion: 'q'
+                })
+
+                if (move === null) return 'snapback'
+                window.setTimeout(makeRandomMove, 250)
+            }
+
+            function onSnapEnd () {
+                board1.position(chess.fen())
+            }
+
+            function getWhiteValue(array, sym, num){
+                return array[sym][num];
+            }
+
+            function getBlackValue(array, sym, num){
+                return -array[7 - sym][7 - num];
+            }
+
+            if (window.File && window.FileReader && window.FileList && window.Blob) {
+             
+            } else {
+                alert('The File APIs are not fully supported in this browser.');
+            }
+            
+            //Open file
+            function handleFileSelect(evt) {
+                var files = evt.target.files; // FileList object
+                for (var i = 0, f; f = files[i]; i++) {
+
+
+                if (!f.type.match('text.*')) {
+                    continue;
+                }
+
+                var reader = new FileReader();
+
+                reader.onload = (function(theFile) {
+                    return function(e) {
+
+                        var pgn;
+                        var span = document.createElement('span');
+                        span.innerHTML = [e.target.result, escape(theFile.name)].join('');
+                        filepgn = e.target.result;
+                        document.getElementById('list').insertBefore(span, null);
+                        pgn = [[e.target.result].join('').split(',')];
+                        console.log(pgn);
+                        console.log(e.target.type);
+
+                        chess.load_pgn(pgn.join('\n'));
+                        /*chess.undo();
+                        chess.undo();
+                        chess.undo();
+                        chess.undo();
+                        chess.undo();*/
+                        // -> true
+                        console.log(chess.fen());
+                        // -> 1r3kr1/pbpBBp1p/1b3P2/8/8/2P2q2/P4PPP/3R2K1 b - - 0 24
+                        var cfg = {
+                            position: chess.fen()
+                        };
+                        board1 = ChessBoard('board1', cfg);
+                        
+                        console.log(chess.ascii());                            
+                    };
+                })(f);
+                reader.readAsText(f);
+                }
+            }
+
+            function calculate(Player){
+                var getPieceValue = function (piece, i, j) {
+                                if (piece === null) {
+                                    return 0;
+                                }
+                                var getAbsoluteValue = function (piece) {
+                                    if(piece.color == 'w')
+                                        switch(piece.type){
+                                            case 'p':
+                                                return weight.whitePawn + getWhiteValue(positionPawn, i, j) * 10;
+                                                break;
+                                            case 'r':
+                                                return weight.whiteRook + getWhiteValue(positionRook, i, j) * 10;
+                                                break;
+                                            case 'n':
+                                                return weight.whiteKnight + getWhiteValue(positionKnight, i, j) * 10;
+                                                break;
+                                            case 'b':
+                                                return weight.whiteBishop + getWhiteValue(positionBishop, i, j) * 10;
+                                                break;
+                                            case 'q':
+                                                return weight.whiteQueen + getWhiteValue(positionQueen, i, j) * 10;
+                                                break;
+                                            case 'k':
+                                                return weight.whiteKing + getWhiteValue(positionKing, i, j) * 10;
+                                                break;
+                                            default:
+                                                return 0;
+                                                break;
+                                        } 
+                                        if(piece.color == 'b')
+                                        switch(piece.type){
+                                            case 'p':
+                                                return weight.blackPawn + getBlackValue(positionPawn, i, j) * 10;
+                                                break;
+                                            case 'r':
+                                                return weight.blackRook + getBlackValue(positionRook, i, j) * 10;
+                                                break;
+                                            case 'n':
+                                                return weight.blackKnight + getBlackValue(positionKnight, i, j) * 10;
+                                                break;
+                                            case 'b':
+                                                return weight.blackBishop + getBlackValue(positionBishop, i, j) * 10;
+                                                break;
+                                            case 'q':
+                                                return weight.blackQueen + getBlackValue(positionQueen, i, j) * 10;
+                                                break;
+                                            case 'k':
+                                                return weight.blackKing + getBlackValue(positionKing, i, j) * 10;
+                                                break;
+                                            default:
+                                                return 0;
+                                                break;
+                                        } 
+                                        
+                                    
+                                };
+
+                                var absoluteValue = getAbsoluteValue(piece);
+                                return absoluteValue;
+                            };
+
+                var evaluateBoard = function (board) {
+                    var totalEvaluation = 0;
+                    
+                    for (var i = 0; i < 8; i++) {
+                        for (var j = 0; j < 8; j++) {
+                            totalEvaluation = totalEvaluation + getPieceValue(board[i][j], j, 7 - i);
+                        }
+                    }
+                    return totalEvaluation;
+                };
+
+                var calculatedBestMove = function (chess) {
+                    var newGameMoves = chess.moves();
+                    var bestMove = null;
+                    var bestValue = -9999;
+                    for(var i = 0; i < newGameMoves.length; i++) {
+                        var newGameMove = newGameMoves[i];
+                        chess.move(newGameMove);
+                        //console.log(chess.ascii);
+                        var boardValue = evaluateBoard(chess.board())
+                        chess.undo();
+                        if(boardValue > bestValue) {
+                            bestValue = boardValue;
+                            bestMove = newGameMove
+                        }
+                    }
+                    return bestMove;
+                };
+                
+                var dataMoves = [];
+
+                var minimaxRoot =function(depth, game, isMaximisingPlayer) {
+
+                    var newGameMoves = game.moves();
+                    var bestMove = -9999;
+                    var bestMoveFound;
+                    if (!isMaximisingPlayer){
+                        bestMove = -9999;
+                    } else {
+                        bestMove = 9999;
+                    }
+                    for(var i = 0; i < newGameMoves.length; i++) {
+                        var newGameMove = newGameMoves[i]
+                        game.move(newGameMove);
+                        var value = alphabetamove(depth - 1, game, -11000, 11000, !isMaximisingPlayer);
+						if(Math.abs(value) > 9999){
+							bestMove = value;
+							bestMoveFound = newGameMove;
+							break;
+						}
+							
+                        history = chess.history({verbose: true});
+                        boardMove = chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].from + "-" + chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].to;
+                        console.log(isMaximisingPlayer + " " +  bestMove + " " + evaluateBoard(game.board()) + " Move:" + newGameMoves[i]);             
+                        game.undo();
+                        if (!isMaximisingPlayer){
+                            if(value >= bestMove) {
+                                bestMove = value;
+                                bestMoveFound = newGameMove;
+                            }
+                        }
+                        else{ 
+                            if(value <= bestMove) {
+                                bestMove = value;
+                                bestMoveFound = newGameMove;
+                            }
+                        }
+                    }
+                    return bestMoveFound;
+                };1
+
+                var alphabetamove = function (depth, game, alpha, beta, isMaximisingPlayer) {
+                    positionCount++;
+                    if (depth === 0) {
+                        return evaluateBoard(game.board());
+                    }
+
+                    var newGameMoves = game.moves();
+
+                    if (!isMaximisingPlayer) {
+                        var bestMove = -9999;  // 1
+                        for (var i = 0; i < newGameMoves.length; i++) {
+                            var tempgame = game.board();
+                            game.move(newGameMoves[i]);
+                            
+                            if(Math.abs(evaluateBoard(game.board()) - evaluateBoard(tempgame)) < 0.5 && Math.abs(evaluateBoard(game.board()) - evaluateBoard(tempgame)) > 0)
+                            {
+                                game.undo();
+                                console.log("Delta Alpha:", evaluateBoard(game.board()), evaluateBoard(tempgame));
+                                return -9999;
+                            }
+							if(game.in_checkmate()){
+								game.undo();
+								return 10000;
+							}
+                            bestMove = Math.max(bestMove, alphabetamove(depth - 1, game, alpha, beta, !isMaximisingPlayer));
+                            history = chess.history({verbose: true});
+                            boardMove = chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].from + "-" + chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].to;
+                            console.log(isMaximisingPlayer + " " + bestMove + " " + evaluateBoard(game.board()) + " Move:" + newGameMoves[i]);                             
+                            game.undo();
+                            
+                            alpha = Math.max(alpha, bestMove);
+                            if (beta <= alpha) {
+                                return bestMove;
+                            }
+                        }
+                        
+                        return bestMove;
+                    } else {
+                        var bestMove = 9999; // 2
+                        for (var i = 0; i < newGameMoves.length; i++) {
+                            var tempgame = game.board();
+                            game.move(newGameMoves[i]);
+                            
+                            if(Math.abs(evaluateBoard(game.board()) - evaluateBoard(tempgame)) < 0.5 && Math.abs(evaluateBoard(game.board()) - evaluateBoard(tempgame)) > 0)
+                            {
+                                game.undo();
+                                console.log("Delta Alpha:", evaluateBoard(game.board()), evaluateBoard(tempgame));
+                                return 9999;
+                            }
+							
+							if(game.in_checkmate()){
+								game.undo();
+								return -10000;
+							}
+                            bestMove = Math.min(bestMove, alphabetamove(depth - 1, game, alpha, beta, !isMaximisingPlayer));       
+                            history = chess.history({verbose: true});
+                            boardMove = chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].from + "-" + chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].to;
+                            console.log(isMaximisingPlayer + " " + bestMove + " " + evaluateBoard(game.board()) + " Move:" + newGameMoves[i]);                             
+                            game.undo();
+                            beta = Math.min(beta, bestMove);
+                            if (beta <= alpha) {
+                                return bestMove;
+                            }
+                            
+                        }
+                        return bestMove;
+                    }
+                };
+
+        
+                globDepth = parseInt($('#search-depth').find(':selected').text());
+                board1.position(chess.fen());
+                positionCount = 0;
+                var m = minimaxRoot(globDepth, chess, Player);
+                //console.log(chess.ascii());
+                console.log(m);                
+                chess.move(m);
+                history = chess.history({verbose: true});
+                boardMove = chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].from + "-" + chess.history({ verbose: true })[chess.history({ verbose: true }).length - 1].to;
+                console.log(chess.ascii());
+                
+                //console.log(boardMove);
+                //console.log(historyDM);
+                //board1.position(chess.fen());
+                //board1.move(boardMove);
+                
+                if(chess.in_checkmate()){
+                    console.log("Checkmate");
+                    //return null;
+                } 
+
+                return boardMove;
+            }
+            
+            
+            pl = false; //0 первый игрок - false, второй игрок - true
+            document.getElementById('files').addEventListener('change', handleFileSelect, false);
+            $('#moveButton').on('click', function() {
+                //board1.move(calculate(pl));
+                var startSec = Date.now();
+                calculate(pl);
+                var endSec = Date.now();
+                var resSec = endSec - startSec;
+                console.log("Timer: " + resSec / 1000 + " sec.");
+                console.log("Position evaluated:" + positionCount);
+                board1.position(chess.fen());
+                pl = !pl;
+            });
+            $('#undoButton').on('click', function() {
+               chess.undo();
+               board1.position(chess.fen());
+               pl = !pl;
+            });           
+            $('#checkButton').on('click', function(){
+                var pl = false;
+                var text = "";
+                var res = 0;
+                for(let i = 0; i < 5; i++){
+                    res = calculate(pl); //w1
+                    text += res;
+                    pl = !pl;
+                    if(chess.in_checkmate()){
+                        alert("Checkmate is real!" + text);
+                        break;
+                    }
+
+                }
+                
+                if(!chess.in_checkmate()){
+                    alert("Checkmate isn't real. You can play!" );
+                    chess.undo();
+                    chess.undo();
+                    chess.undo();
+                    chess.undo();
+                    chess.undo();
+                }
+                board1.position(chess.fen());
+            })
+            
+            
+        </script>
+    </body>
+</html>
