@@ -1,3 +1,12 @@
+requirejs.config({
+    baseUrl: 'lib',
+    paths: {
+        app: '../app'
+    }
+  });
+  
+  requirejs(['app/main']);
+
 define(function (require) {
     // Load any app-specific modules
     // with a relative require call,
