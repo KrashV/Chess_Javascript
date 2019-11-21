@@ -1,4 +1,5 @@
 var express = require('express')
+var path = require('path')
 var app = express()
 var passport = require('passport')
 var session = require('express-session')
@@ -34,11 +35,7 @@ app.set('view engine', '.hbs');
  
  
  
-app.get('/', function(req, res) {
- 
-    res.send('Welcome to Passport with Sequelize');
- 
-});
+app.use(express.static(path.join(__dirname, '../public')));
  
 //Models
 var models = require("./app/models");
@@ -46,7 +43,7 @@ var models = require("./app/models");
 //Routes
  
 var authRoute = require('./app/routes/auth.js')(app,passport);
- 
+var indexRoute = require('./app/routes/index.js')(app);
  
 //load passport strategies
  

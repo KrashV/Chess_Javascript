@@ -17,8 +17,11 @@ module.exports = function(passport, user) {
 	
 	// deserialize user 
 	passport.deserializeUser(function(id, done) {
-	 
-		User.findById(id).then(function(user) {
+		User.findOne({
+            where: {
+                id: id
+            }
+        }).then(function(user) {
 	 
 			if (user) {
 	 
@@ -31,7 +34,6 @@ module.exports = function(passport, user) {
 			}
 	 
 		});
-	 
 	});
 	
 	
@@ -50,7 +52,7 @@ module.exports = function(passport, user) {
  
  
         function(req, email, password, done) {
- 
+			console.log("User SignUp Start");
             var generateHash = function(password) {
  
                 return bCrypt.hashSync(password, bCrypt.genSaltSync(8), null);
@@ -68,7 +70,7 @@ module.exports = function(passport, user) {
                 if (user)
  
                 {
- 
+					console.log("User Already exists");
                     return done(null, false, {
                         message: 'That email is already taken'
                     });
@@ -76,7 +78,7 @@ module.exports = function(passport, user) {
                 } else
  
                 {
- 
+					console.log("Saving user???");
                     var userPassword = generateHash(password);
  
                     var data =
@@ -95,13 +97,13 @@ module.exports = function(passport, user) {
                     User.create(data).then(function(newUser, created) {
  
                         if (!newUser) {
- 
+							console.log("Failure");
                             return done(null, false);
  
                         }
  
                         if (newUser) {
- 
+							console.log("Success");
                             return done(null, newUser);
  
                         }
@@ -135,7 +137,7 @@ module.exports = function(passport, user) {
     function(req, email, password, done) {
  
         var User = user;
- 
+		console.log("User:", User);
         var isValidPassword = function(userpass, password) {
  
             return bCrypt.compareSync(password, userpass);
