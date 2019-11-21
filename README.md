@@ -11,6 +11,6 @@
 
 * Run
 
-``node start``
+``npm start``
 
 В браузере открыть localhost:5000
