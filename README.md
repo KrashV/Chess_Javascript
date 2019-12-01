@@ -3,9 +3,14 @@
 
 ## Prerequirements 
 * Node JS
-* Express
-  ``nvm install express``
+* Install dependencies
 
+``npm install``
 ## Run
-``node src/app.js``
-В браузере открыть localhost:3000
+
+
+* Run
+
+``npm start``
+
+В браузере открыть localhost:5000
