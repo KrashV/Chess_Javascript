@@ -152,7 +152,6 @@ function SocketClient(){
             socket.emit("newGameRequest",room);
         },
         connectRoom:function(){
-			alert(name.text());
 			socket.emit("sendName",name.text());
 		}
     }
