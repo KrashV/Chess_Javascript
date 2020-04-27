@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('online-chess:server');
 var http = require('http');
+var fs = require('fs'); 
 var socketServer = require("../controllers/socketServer");
 /**
  * Get port from environment and store in Express.
@@ -16,6 +17,15 @@ var port = normalizePort(process.env.PORT || '3000');
 //var port =process.env.PORT || '3000';
 app.set('port', port);
 
+/** 
+ * Create database file if it doesn't exists
+ */
+if (!fs.existsSync('./db')){
+    fs.mkdirSync('./db');
+}
+fs.writeFile('./db/db.sqlite3', '', { flag: 'wx' }, function (err) {
+    if (err) console.log('Database file exists');
+});
 /**
  * Create HTTP server.
  */
