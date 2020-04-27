@@ -14,8 +14,6 @@ var passport = require('passport');
 var models = require("./models");
 var app = express();
 
-app.use(flash());
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug'); 
@@ -25,6 +23,7 @@ app.locals.basedir = path.join(__dirname, 'views');
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(flash());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(compression());

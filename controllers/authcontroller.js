@@ -1,11 +1,11 @@
 var exports = module.exports = {}
  
 exports.register = function(req, res) {
-    res.render('register');
+    res.render('register', { messages: req.flash('error') });
 }
 
 exports.login = function(req, res) {
-    res.render('login');
+    res.render('login', { messages: req.flash('error') });
 }
 
 exports.play = function(req, res) {
