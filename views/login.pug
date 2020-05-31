@@ -1,11 +1,28 @@
 link(rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css')
-p #{messages}
-form(method='post')
-  .row
-    label.col-xs-2(for='username1') Login
-    input#username1.col-xs-4(type='text' name='username')
-  .row
-    label.col-xs-2(for='passw1') Password
-    input#passw1.col-xs-4(type='password' name='password')
-  input.btn.btn-success(type='submit' value='Login')
-a.btn.btn-info(href='/register') Register
+link(rel='stylesheet' href='https://use.fontawesome.com/releases/v5.3.1/css/all.css' integrity='sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU' crossorigin='anonymous')
+link(href='https://fonts.googleapis.com/css?family=Roboto:300,400' rel='stylesheet')
+link(rel="stylesheet" href="/css/login.css")
+
+head
+  title JS Chess
+  
+form#form_wrapper(method='post')
+  #form_left
+    img(src='/img/chesslogo.png' alt='computer icon')
+  #form_right
+    h1 Member Login
+    if successMessages
+      h5.success #{successMessages}
+    else if failMessages
+      h5.error #{failMessages}
+    else
+      h5
+    .input_container
+      i.fas.fa-key
+      input#field_email.input_field(placeholder='Login' name='username')
+    .input_container
+      i.fas.fa-lock
+      input#field_password.input_field(placeholder='Password' type='password' name='password')
+    input#input_submit.input_field(type='submit' value='Login')
+    span#create_account
+      a(href='/register') Create your account &#x27A1;

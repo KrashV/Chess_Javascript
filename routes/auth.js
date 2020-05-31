@@ -1,9 +1,9 @@
 var authController = require('../controllers/authcontroller.js');
 
 module.exports = function(app, passport) {
-	app.get('/', (req,res)=>{
-		res.redirect("/login");
-	});
+    app.get('/', (req,res)=>{
+      res.redirect("/login");
+    });
     app.get('/register', authController.register);
 
     app.get('/login', authController.login);
@@ -11,8 +11,9 @@ module.exports = function(app, passport) {
     app.post('/register', passport.authenticate('local-signup', {
             successRedirect: "/login",
             failureRedirect: "/register",
-			failureFlash : true
-        })
+            failureFlash : true,
+            successFlash: true
+    })
 	);
  
     app.get('/play', isLoggedIn, authController.play);
@@ -20,10 +21,10 @@ module.exports = function(app, passport) {
     app.get('/logout', authController.logout);
 
     app.post('/login', passport.authenticate('local-signin', {
-            successRedirect: '/play',
-            failureRedirect: '/login',
+      successRedirect: '/play',
+      failureRedirect: '/login',
 			failureFlash : true
-        }
+      }
     ));
 	
 	function isLoggedIn(req, res, next) {

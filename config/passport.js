@@ -49,7 +49,7 @@ module.exports = function(passport, user) {
                 if (user)
  
                 {
-					console.log("User Already exists");
+                    console.log("User Already exists");
                     return done(null, false, {
                         message: 'That username is already taken'
                     });
@@ -57,7 +57,6 @@ module.exports = function(passport, user) {
                 } else
  
                 {
-					console.log("Saving user???");
                     var userPassword = generateHash(password);
  
                     var data =
@@ -79,7 +78,9 @@ module.exports = function(passport, user) {
  
                         if (newUser) {
 							console.log("Success");
-                            return done(null, newUser);
+                            return done(null, newUser, {
+                              message: 'Success!'
+                          });
  
                         }
                     });
@@ -113,14 +114,14 @@ module.exports = function(passport, user) {
             if (!user) {
  
                 return done(null, false, {
-                    message: 'username does not exist'
+                    message: 'Username does not exist'
                 });
  
             }
             if (!isValidPassword(user.password, password)) {
  
                 return done(null, false, {
-                    message: 'Incorrect password.'
+                    message: 'Incorrect password'
                 });
  
             }
