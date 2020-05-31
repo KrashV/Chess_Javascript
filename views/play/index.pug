@@ -1,0 +1,38 @@
+extends ../layout
+
+block includelib
+    // include chessboard.js 
+    include ./chessboardjs.pug
+    //include chess.js
+    include ./chessjs.pug
+    //include the board
+    include ./board.pug
+    //include the engineGame
+    include ./engine.pug
+    //inclue main game
+    include ./main.pug
+    //include socket.io
+    include ./socket.pug
+
+block includestyle
+    include ./style.pug
+block menu
+    div(class='container-fluid')
+        h2(style="text-align:center;") Chess.io
+
+        div(class="row")
+                button(id="newGameButton" class="btn btn-primary") New Game
+        div(class='row')
+            form(id="joinGame" method="" )
+                label Enter Host Name
+                input(id="hostName" class="chat-box" type="text")
+                span
+                    button(class="btn btn-primary" type='submit') Join Host
+
+block content
+    div(class="container-fluid")
+        div(class="row")
+            h3(id="name" style="margin-bottom:20px; text-align:center;width:100%;") #{userName}
+
+        div(class="row")
+            div(id="board" style="width:450px;padding-top:50px; margin:auto;")
